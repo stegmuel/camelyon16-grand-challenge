@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import multiresolutionimageinterface as mir
 from glob import glob
 import os
@@ -32,24 +33,50 @@ def get_tumor_mask(save_dir, xml_queries, image_queries):
     # Initialize the image reader
     image_reader = mir.MultiResolutionImageReader()
 
+    # Create the arguments
+    args = [(image_reader, f_x, f_i, f_o) for f_x, f_i, f_o in zip(xml_filepaths, image_filepaths, output_filepaths)]
+
+    # Extract all trois from the slide
+    with ThreadPoolExecutor(max_workers=16) as executor:
+        executor.map(compute_single_slide_mask, *zip(*args))
+
     # Create the masks
-    for f_x, f_i, f_o in zip(xml_filepaths, image_filepaths, output_filepaths):
-        # Read the input image
-        input_image = image_reader.open(f_i)
+    # for f_x, f_i, f_o in zip(xml_filepaths, image_filepaths, output_filepaths):
+    #     # Read the input image
+    #     input_image = image_reader.open(f_i)
+    #
+    #     # Get the annotations
+    #     annotation_list = mir.AnnotationList()
+    #     xml_repository = mir.XmlRepository(annotation_list)
+    #     xml_repository.setSource(f_x)
+    #     xml_repository.load()
+    #     annotation_mask = mir.AnnotationToMask()
+    #     camelyon17_type_mask = False
+    #     label_map = {'metastases': 1, 'normal': 2} if camelyon17_type_mask else {'_0': 1, '_1': 1, '_2': 0}
+    #     conversion_order = ['metastases', 'normal'] if camelyon17_type_mask else ['_0', '_1', '_2']
+    #
+    #     # Get the mask
+    #     annotation_mask.convert(annotation_list, f_o, input_image.getDimensions(), input_image.getSpacing(), label_map,
+    #                             conversion_order)
 
-        # Get the annotations
-        annotation_list = mir.AnnotationList()
-        xml_repository = mir.XmlRepository(annotation_list)
-        xml_repository.setSource(f_x)
-        xml_repository.load()
-        annotation_mask = mir.AnnotationToMask()
-        camelyon17_type_mask = False
-        label_map = {'metastases': 1, 'normal': 2} if camelyon17_type_mask else {'_0': 1, '_1': 1, '_2': 0}
-        conversion_order = ['metastases', 'normal'] if camelyon17_type_mask else ['_0', '_1', '_2']
 
-        # Get the mask
-        annotation_mask.convert(annotation_list, f_o, input_image.getDimensions(), input_image.getSpacing(), label_map,
-                                conversion_order)
+def compute_single_slide_mask(image_reader, f_x, f_i, f_o):
+    # Read the input image
+    input_image = image_reader.open(f_i)
+
+    # Get the annotations
+    annotation_list = mir.AnnotationList()
+    xml_repository = mir.XmlRepository(annotation_list)
+    xml_repository.setSource(f_x)
+    xml_repository.load()
+    annotation_mask = mir.AnnotationToMask()
+    camelyon17_type_mask = False
+    label_map = {'metastases': 1, 'normal': 2} if camelyon17_type_mask else {'_0': 1, '_1': 1, '_2': 0}
+    conversion_order = ['metastases', 'normal'] if camelyon17_type_mask else ['_0', '_1', '_2']
+
+    # Get the mask
+    annotation_mask.convert(annotation_list, f_o, input_image.getDimensions(), input_image.getSpacing(), label_map,
+                            conversion_order)
 
 
 if __name__ == '__main__':
