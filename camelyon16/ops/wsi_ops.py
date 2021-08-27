@@ -1,3 +1,6 @@
+import sys
+from random import sample
+
 from openslide import OpenSlide, OpenSlideUnsupportedFormatError
 import matplotlib.pyplot as plt
 from einops import rearrange
@@ -39,8 +42,6 @@ class PatchExtractor(object):
             b_x_end = int(bounding_box[0]) + int(bounding_box[2])
             b_y_end = int(bounding_box[1]) + int(bounding_box[3])
 
-            X = np.random.random_integers(b_x_start, high=b_x_end, size=utils.NUM_POSITIVE_PATCHES_FROM_EACH_BBOX)
-            Y = np.random.random_integers(b_y_start, high=b_y_end, size=utils.NUM_POSITIVE_PATCHES_FROM_EACH_BBOX)
             width = int(bounding_box[2]) * mag_factor
             height = int(bounding_box[3]) * mag_factor
             print('Dimension of the bounding box: {} x {}'.format(height, width))
@@ -51,25 +52,22 @@ class PatchExtractor(object):
             xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
 
             # Filer the non-tumor patches
-            centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
-                       for x, y in xv_yv]
-            xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers)
-                     if int(tumor_gt_mask[y_c, x_c]) is utils.PIXEL_WHITE]
+            if width * height > utils.PATCH_SIZE ** 2:
+                centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
+                           for x, y in xv_yv]
+                xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers)
+                         if int(tumor_gt_mask[y_c, x_c]) is utils.PIXEL_WHITE]
             print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
 
             for x, y in xv_yv:
-                x_c = int((x + utils.PATCH_SIZE / 2) / mag_factor)
-                y_c = int((y + utils.PATCH_SIZE / 2) / mag_factor)
-                is_tumor = int(tumor_gt_mask[y_c, x_c]) is utils.PIXEL_WHITE
-                if is_tumor:
-                    patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
-                    patch = patch.convert('RGB')
+                patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
+                patch = patch.convert('RGB')
 
-                    # Save the patch
-                    patch_name = '_'.join([slide_filename, str(x), str(y)]) + '.jpg'
-                    patch.save(patch_save_dir + patch_name, 'JPEG')
-                    patch_index += 1
-                    patch.close()
+                # Save the patch
+                patch_name = '_'.join([slide_filename, str(x), str(y)]) + '.jpg'
+                patch.save(patch_save_dir + patch_name, 'JPEG')
+                patch_index += 1
+                patch.close()
 
         return patch_index
 
@@ -96,22 +94,41 @@ class PatchExtractor(object):
         mag_factor = pow(2, level_used)
 
         print('No. of ROIs to extract patches from: %d' % len(bounding_boxes))
+        slide_filename = wsi_image._filename.split('/')[-1].split('.')[0]
 
         for bounding_box in bounding_boxes:
             b_x_start = int(bounding_box[0])
             b_y_start = int(bounding_box[1])
             b_x_end = int(bounding_box[0]) + int(bounding_box[2])
             b_y_end = int(bounding_box[1]) + int(bounding_box[3])
-            X = np.random.random_integers(b_x_start, high=b_x_end, size=utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX)
-            Y = np.random.random_integers(b_y_start, high=b_y_end, size=utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX)
 
-            for x, y in zip(X, Y):
-                if int(image_open[y, x]) is not utils.PIXEL_BLACK:
-                    patch = wsi_image.read_region((x * mag_factor, y * mag_factor), 0,
-                                                  (utils.PATCH_SIZE, utils.PATCH_SIZE))
-                    patch.save(patch_save_dir + patch_prefix + str(patch_index), 'PNG')
-                    patch_index += 1
-                    patch.close()
+            width = int(bounding_box[2]) * mag_factor
+            height = int(bounding_box[3]) * mag_factor
+            print('Dimension of the bounding box: {} x {}'.format(height, width))
+            xs = np.arange(start=int(b_x_start * mag_factor), stop=int(b_x_end * mag_factor), step=utils.PATCH_SIZE)
+            ys = np.arange(start=int(b_y_start * mag_factor), stop=int(b_y_end * mag_factor), step=utils.PATCH_SIZE)
+            xv, yv = np.meshgrid(xs, ys)
+            xv_yv = np.stack([xv, yv])
+            xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
+
+            # Filer the non-tumor patches
+            centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
+                       for x, y in xv_yv]
+            xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers)
+                     if int(image_open[y_c, x_c]) is not utils.PIXEL_BLACK]
+            print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
+
+            for x, y in xv_yv:
+                patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
+                patch = patch.convert('RGB')
+
+                # Save the patch
+                patch_name = '_'.join([slide_filename, str(x), str(y)]) + '.jpg'
+                patch.save(patch_save_dir + patch_name, 'JPEG')
+                patch = wsi_image.read_region((x * mag_factor, y * mag_factor), 0,
+                                              (utils.PATCH_SIZE, utils.PATCH_SIZE))
+                patch_index += 1
+                patch.close()
 
         return patch_index
 
@@ -134,27 +151,45 @@ class PatchExtractor(object):
             :return:
 
         """
-
         mag_factor = pow(2, level_used)
         tumor_gt_mask = cv2.cvtColor(tumor_gt_mask, cv2.COLOR_BGR2GRAY)
         print('No. of ROIs to extract patches from: %d' % len(bounding_boxes))
+        slide_filename = wsi_image._filename.split('/')[-1].split('.')[0]
 
         for bounding_box in bounding_boxes:
             b_x_start = int(bounding_box[0])
             b_y_start = int(bounding_box[1])
             b_x_end = int(bounding_box[0]) + int(bounding_box[2])
             b_y_end = int(bounding_box[1]) + int(bounding_box[3])
-            X = np.random.random_integers(b_x_start, high=b_x_end, size=utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX)
-            Y = np.random.random_integers(b_y_start, high=b_y_end, size=utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX)
 
-            for x, y in zip(X, Y):
-                if int(image_open[y, x]) is not utils.PIXEL_BLACK and int(tumor_gt_mask[y, x]) is not utils.PIXEL_WHITE:
-                    # mask_gt does not contain tumor area
-                    patch = wsi_image.read_region((x * mag_factor, y * mag_factor), 0,
-                                                  (utils.PATCH_SIZE, utils.PATCH_SIZE))
-                    patch.save(patch_save_dir + patch_prefix + str(patch_index), 'PNG')
-                    patch_index += 1
-                    patch.close()
+            width = int(bounding_box[2]) * mag_factor
+            height = int(bounding_box[3]) * mag_factor
+            print('Dimension of the bounding box: {} x {}'.format(height, width))
+            xs = np.arange(start=int(b_x_start * mag_factor), stop=int(b_x_end * mag_factor), step=utils.PATCH_SIZE)
+            ys = np.arange(start=int(b_y_start * mag_factor), stop=int(b_y_end * mag_factor), step=utils.PATCH_SIZE)
+            xv, yv = np.meshgrid(xs, ys)
+            xv_yv = np.stack([xv, yv])
+            xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
+
+            # Filer the non-tumor patches
+            centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
+                       for x, y in xv_yv]
+            xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers) if
+                     int(image_open[y_c, x_c]) is not utils.PIXEL_BLACK and
+                     int(tumor_gt_mask[y_c, x_c]) is not utils.PIXEL_WHITE]
+            print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
+            if len(xv_yv) > utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX:
+                xv_yv = sample(xv_yv, utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX)
+
+            for x, y in xv_yv:
+                patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
+                patch = patch.convert('RGB')
+
+                # Save the patch
+                patch_name = '_'.join([slide_filename, str(x), str(y)]) + '.jpg'
+                patch.save(patch_save_dir + patch_name, 'JPEG')
+                patch_index += 1
+                patch.close()
 
         return patch_index
 
@@ -371,7 +406,7 @@ class WSIOps(object):
     def find_roi_bbox(self, rgb_image):
         # hsv -> 3 channel
         hsv = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
-        lower_red = np.array([20, 20, 20])
+        lower_red = np.array([40, 40, 40])
         upper_red = np.array([200, 200, 200])
         # mask -> 1 channel
         mask = cv2.inRange(hsv, lower_red, upper_red)
@@ -413,7 +448,7 @@ class WSIOps(object):
         # _, contours, _ = cv2.findContours(cont_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours, _ = cv2.findContours(cont_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         rgb_contour = None
-        if rgb_image:
+        if rgb_image is not None:
             rgb_contour = rgb_image.copy()
             line_color = (255, 0, 0)  # blue color code
             cv2.drawContours(rgb_contour, contours, -1, line_color, 2)

@@ -1,7 +1,9 @@
 import glob
 import os
+import sys
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 
 import camelyon16.utils as utils
@@ -34,12 +36,7 @@ def extract_positive_patches_from_tumor_wsi(wsi_paths, mask_paths, wsi_ops, patc
         wsi_image.close()
 
 
-def extract_negative_patches_from_tumor_wsi(wsi_ops, patch_extractor, patch_index, augmentation=False):
-    wsi_paths = glob.glob(os.path.join(utils.TUMOR_WSI_PATH, '*.tif'))
-    wsi_paths.sort()
-    mask_paths = glob.glob(os.path.join(utils.TUMOR_MASK_PATH, '*.tif'))
-    mask_paths.sort()
-
+def extract_negative_patches_from_tumor_wsi(wsi_paths, mask_paths, wsi_ops, patch_extractor, patch_index, augmentation=False):
     image_mask_pair = zip(wsi_paths, mask_paths)
     image_mask_pair = list(image_mask_pair)
     # image_mask_pair = image_mask_pair[67:68]
@@ -51,14 +48,13 @@ def extract_negative_patches_from_tumor_wsi(wsi_ops, patch_extractor, patch_inde
         wsi_image, rgb_image, _, tumor_gt_mask, level_used = wsi_ops.read_wsi_tumor(image_path, mask_path)
         assert wsi_image is not None, 'Failed to read Whole Slide Image %s.' % image_path
 
-        bounding_boxes, image_open = wsi_ops.find_roi_bbox(np.array(rgb_image))
+        bounding_boxes, rgb_contour, image_open = wsi_ops.find_roi_bbox(np.array(rgb_image))
 
         patch_index = patch_extractor.extract_negative_patches_from_tumor_wsi(wsi_image, np.array(tumor_gt_mask),
                                                                               image_open, level_used,
                                                                               bounding_boxes, patch_save_dir,
                                                                               patch_prefix,
                                                                               patch_index)
-        print('Negative patches count: %d' % (patch_index - utils.PATCH_INDEX_NEGATIVE))
 
         wsi_image.close()
 

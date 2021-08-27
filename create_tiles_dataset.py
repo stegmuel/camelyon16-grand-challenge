@@ -35,4 +35,5 @@ if __name__ == '__main__':
     # mask_paths = ['/media/thomas/Samsung_T5/CAMELYON-16/tif_masks/tumor_002.tif']
 
     # Extract tumor patches
-    extract_positive_patches_from_tumor_wsi(image_paths, mask_paths, wsi_ops, patch_extractor, 0)
+    # extract_positive_patches_from_tumor_wsi(image_paths, mask_paths, wsi_ops, patch_extractor, 0)
+    extract_negative_patches_from_tumor_wsi(image_paths, mask_paths, wsi_ops, patch_extractor, 0)
