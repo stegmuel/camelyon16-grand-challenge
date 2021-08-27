@@ -1,6 +1,8 @@
-import cv2
-import numpy as np
 from openslide import OpenSlide, OpenSlideUnsupportedFormatError
+import matplotlib.pyplot as plt
+from einops import rearrange
+import numpy as np
+import cv2
 
 import camelyon16.utils as utils
 
@@ -29,20 +31,43 @@ class PatchExtractor(object):
         mag_factor = pow(2, level_used)
         tumor_gt_mask = cv2.cvtColor(tumor_gt_mask, cv2.COLOR_BGR2GRAY)
         print('No. of ROIs to extract patches from: %d' % len(bounding_boxes))
+        slide_filename = wsi_image._filename.split('/')[-1].split('.')[0]
 
         for bounding_box in bounding_boxes:
             b_x_start = int(bounding_box[0])
             b_y_start = int(bounding_box[1])
             b_x_end = int(bounding_box[0]) + int(bounding_box[2])
             b_y_end = int(bounding_box[1]) + int(bounding_box[3])
+
             X = np.random.random_integers(b_x_start, high=b_x_end, size=utils.NUM_POSITIVE_PATCHES_FROM_EACH_BBOX)
             Y = np.random.random_integers(b_y_start, high=b_y_end, size=utils.NUM_POSITIVE_PATCHES_FROM_EACH_BBOX)
+            width = int(bounding_box[2]) * mag_factor
+            height = int(bounding_box[3]) * mag_factor
+            print('Dimension of the bounding box: {} x {}'.format(height, width))
+            xs = np.arange(start=int(b_x_start * mag_factor), stop=int(b_x_end * mag_factor), step=utils.PATCH_SIZE)
+            ys = np.arange(start=int(b_y_start * mag_factor), stop=int(b_y_end * mag_factor), step=utils.PATCH_SIZE)
+            xv, yv = np.meshgrid(xs, ys)
+            xv_yv = np.stack([xv, yv])
+            xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
 
-            for x, y in zip(X, Y):
-                if int(tumor_gt_mask[y, x]) is utils.PIXEL_WHITE:
-                    patch = wsi_image.read_region((x * mag_factor, y * mag_factor), 0,
-                                                  (utils.PATCH_SIZE, utils.PATCH_SIZE))
-                    patch.save(patch_save_dir + patch_prefix + str(patch_index), 'PNG')
+            # Filer the non-tumor patches
+            centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
+                       for x, y in xv_yv]
+            xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers)
+                     if int(tumor_gt_mask[y_c, x_c]) is utils.PIXEL_WHITE]
+            print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
+
+            for x, y in xv_yv:
+                x_c = int((x + utils.PATCH_SIZE / 2) / mag_factor)
+                y_c = int((y + utils.PATCH_SIZE / 2) / mag_factor)
+                is_tumor = int(tumor_gt_mask[y_c, x_c]) is utils.PIXEL_WHITE
+                if is_tumor:
+                    patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
+                    patch = patch.convert('RGB')
+
+                    # Save the patch
+                    patch_name = '_'.join([slide_filename, str(x), str(y)]) + '.jpg'
+                    patch.save(patch_save_dir + patch_name, 'JPEG')
                     patch_index += 1
                     patch.close()
 
@@ -315,12 +340,16 @@ class WSIOps(object):
             wsi_image = OpenSlide(wsi_path)
             wsi_mask = OpenSlide(mask_path)
 
-            level_used = wsi_image.level_count - 1
+            level_used = min(wsi_image.level_count - 1, 5)
 
+            # test = np.asarray(wsi_mask.get_thumbnail((382, 864)))
+            # print(test.shape)
+            # plt.imshow(test[:, :, 0])
+            # plt.show()
             rgb_image = np.array(wsi_image.read_region((0, 0), level_used,
                                                        wsi_image.level_dimensions[level_used]))
 
-            mask_level = wsi_mask.level_count - 1
+            mask_level = min(wsi_mask.level_count - 1, 5)
             tumor_gt_mask = wsi_mask.read_region((0, 0), mask_level,
                                                  wsi_image.level_dimensions[mask_level])
             resize_factor = float(1.0 / pow(2, level_used - mask_level))
@@ -381,7 +410,8 @@ class WSIOps(object):
 
     @staticmethod
     def get_bbox(cont_img, rgb_image=None):
-        _, contours, _ = cv2.findContours(cont_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # _, contours, _ = cv2.findContours(cont_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(cont_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         rgb_contour = None
         if rgb_image:
             rgb_contour = rgb_image.copy()

@@ -9,11 +9,8 @@ from camelyon16.ops.wsi_ops import PatchExtractor
 from camelyon16.ops.wsi_ops import WSIOps
 
 
-def extract_positive_patches_from_tumor_wsi(wsi_ops, patch_extractor, patch_index, augmentation=False):
-    wsi_paths = glob.glob(os.path.join(utils.TUMOR_WSI_PATH, '*.tif'))
-    wsi_paths.sort()
-    mask_paths = glob.glob(os.path.join(utils.TUMOR_MASK_PATH, '*.tif'))
-    mask_paths.sort()
+def extract_positive_patches_from_tumor_wsi(wsi_paths, mask_paths, wsi_ops, patch_extractor, patch_index,
+                                            augmentation=False):
 
     image_mask_pair = zip(wsi_paths, mask_paths)
     image_mask_pair = list(image_mask_pair)
@@ -33,10 +30,8 @@ def extract_positive_patches_from_tumor_wsi(wsi_ops, patch_extractor, patch_inde
                                                                                  level_used, bounding_boxes,
                                                                                  patch_save_dir, patch_prefix,
                                                                                  patch_index)
-        print('Positive patch count: %d' % (patch_index - utils.PATCH_INDEX_POSITIVE))
+        # print('Positive patch count: %d' % (patch_index - utils.PATCH_INDEX_POSITIVE))
         wsi_image.close()
-
-    return patch_index
 
 
 def extract_negative_patches_from_tumor_wsi(wsi_ops, patch_extractor, patch_index, augmentation=False):
