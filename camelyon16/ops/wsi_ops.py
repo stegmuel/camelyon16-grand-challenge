@@ -37,38 +37,40 @@ class PatchExtractor(object):
         slide_filename = wsi_image._filename.split('/')[-1].split('.')[0]
 
         for bounding_box in bounding_boxes:
-            b_x_start = int(bounding_box[0])
-            b_y_start = int(bounding_box[1])
-            b_x_end = int(bounding_box[0]) + int(bounding_box[2])
-            b_y_end = int(bounding_box[1]) + int(bounding_box[3])
+            try:
+                b_x_start = int(bounding_box[0])
+                b_y_start = int(bounding_box[1])
+                b_x_end = int(bounding_box[0]) + int(bounding_box[2])
+                b_y_end = int(bounding_box[1]) + int(bounding_box[3])
 
-            width = int(bounding_box[2]) * mag_factor
-            height = int(bounding_box[3]) * mag_factor
-            print('Dimension of the bounding box: {} x {}'.format(height, width))
-            xs = np.arange(start=int(b_x_start * mag_factor), stop=int(b_x_end * mag_factor), step=utils.PATCH_SIZE)
-            ys = np.arange(start=int(b_y_start * mag_factor), stop=int(b_y_end * mag_factor), step=utils.PATCH_SIZE)
-            xv, yv = np.meshgrid(xs, ys)
-            xv_yv = np.stack([xv, yv])
-            xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
+                width = int(bounding_box[2]) * mag_factor
+                height = int(bounding_box[3]) * mag_factor
+                print('Dimension of the bounding box: {} x {}'.format(height, width))
+                xs = np.arange(start=int(b_x_start * mag_factor), stop=int(b_x_end * mag_factor), step=utils.PATCH_SIZE)
+                ys = np.arange(start=int(b_y_start * mag_factor), stop=int(b_y_end * mag_factor), step=utils.PATCH_SIZE)
+                xv, yv = np.meshgrid(xs, ys)
+                xv_yv = np.stack([xv, yv])
+                xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
 
-            # Filer the non-tumor patches
-            if width * height > utils.PATCH_SIZE ** 2:
-                centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
-                           for x, y in xv_yv]
-                xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers)
-                         if int(tumor_gt_mask[y_c, x_c]) is utils.PIXEL_WHITE]
-            print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
+                # Filer the non-tumor patches
+                if width * height > utils.PATCH_SIZE ** 2:
+                    centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
+                               for x, y in xv_yv]
+                    xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers)
+                             if int(tumor_gt_mask[y_c, x_c]) is utils.PIXEL_WHITE]
+                print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
 
-            for x, y in xv_yv:
-                patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
-                patch = patch.convert('RGB')
+                for x, y in xv_yv:
+                    patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
+                    patch = patch.convert('RGB')
 
-                # Save the patch
-                patch_name = '_'.join([slide_filename, str(x), str(y)]) + '.jpg'
-                patch.save(patch_save_dir + patch_name, 'JPEG')
-                patch_index += 1
-                patch.close()
-
+                    # Save the patch
+                    patch_name = '_'.join([slide_filename, str(x), str(y)]) + '.jpg'
+                    patch.save(patch_save_dir + patch_name, 'JPEG')
+                    patch_index += 1
+                    patch.close()
+            except IndexError:
+                continue
         return patch_index
 
     @staticmethod
@@ -157,39 +159,42 @@ class PatchExtractor(object):
         slide_filename = wsi_image._filename.split('/')[-1].split('.')[0]
 
         for bounding_box in bounding_boxes:
-            b_x_start = int(bounding_box[0])
-            b_y_start = int(bounding_box[1])
-            b_x_end = int(bounding_box[0]) + int(bounding_box[2])
-            b_y_end = int(bounding_box[1]) + int(bounding_box[3])
+            try:
+                b_x_start = int(bounding_box[0])
+                b_y_start = int(bounding_box[1])
+                b_x_end = int(bounding_box[0]) + int(bounding_box[2])
+                b_y_end = int(bounding_box[1]) + int(bounding_box[3])
 
-            width = int(bounding_box[2]) * mag_factor
-            height = int(bounding_box[3]) * mag_factor
-            print('Dimension of the bounding box: {} x {}'.format(height, width))
-            xs = np.arange(start=int(b_x_start * mag_factor), stop=int(b_x_end * mag_factor), step=utils.PATCH_SIZE)
-            ys = np.arange(start=int(b_y_start * mag_factor), stop=int(b_y_end * mag_factor), step=utils.PATCH_SIZE)
-            xv, yv = np.meshgrid(xs, ys)
-            xv_yv = np.stack([xv, yv])
-            xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
+                width = int(bounding_box[2]) * mag_factor
+                height = int(bounding_box[3]) * mag_factor
+                print('Dimension of the bounding box: {} x {}'.format(height, width))
+                xs = np.arange(start=int(b_x_start * mag_factor), stop=int(b_x_end * mag_factor), step=utils.PATCH_SIZE)
+                ys = np.arange(start=int(b_y_start * mag_factor), stop=int(b_y_end * mag_factor), step=utils.PATCH_SIZE)
+                xv, yv = np.meshgrid(xs, ys)
+                xv_yv = np.stack([xv, yv])
+                xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
 
-            # Filer the non-tumor patches
-            centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
-                       for x, y in xv_yv]
-            xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers) if
-                     int(image_open[y_c, x_c]) is not utils.PIXEL_BLACK and
-                     int(tumor_gt_mask[y_c, x_c]) is not utils.PIXEL_WHITE]
-            if len(xv_yv) > utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX:
-                xv_yv = sample(xv_yv, utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX)
-            print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
+                # Filer the non-tumor patches
+                centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
+                           for x, y in xv_yv]
+                xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers) if
+                         int(image_open[y_c, x_c]) is not utils.PIXEL_BLACK and
+                         int(tumor_gt_mask[y_c, x_c]) is not utils.PIXEL_WHITE]
+                if len(xv_yv) > utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX:
+                    xv_yv = sample(xv_yv, utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX)
+                print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
 
-            for x, y in xv_yv:
-                patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
-                patch = patch.convert('RGB')
+                for x, y in xv_yv:
+                    patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
+                    patch = patch.convert('RGB')
 
-                # Save the patch
-                patch_name = '_'.join([slide_filename, str(x), str(y)]) + '.jpg'
-                patch.save(patch_save_dir + patch_name, 'JPEG')
-                patch_index += 1
-                patch.close()
+                    # Save the patch
+                    patch_name = '_'.join([slide_filename, str(x), str(y)]) + '.jpg'
+                    patch.save(patch_save_dir + patch_name, 'JPEG')
+                    patch_index += 1
+                    patch.close()
+            except IndexError:
+                continue
 
         return patch_index
 
