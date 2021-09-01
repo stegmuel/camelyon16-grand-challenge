@@ -37,3 +37,4 @@ if __name__ == '__main__':
     # Extract tumor patches
     # extract_positive_patches_from_tumor_wsi(image_paths, mask_paths, wsi_ops, patch_extractor, 0)
     extract_negative_patches_from_tumor_wsi(image_paths, mask_paths, wsi_ops, patch_extractor, 0)
+    # extract_negative_patches_from_normal_wsi(wsi_ops, patch_extractor, 0)

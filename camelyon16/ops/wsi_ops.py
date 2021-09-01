@@ -177,9 +177,9 @@ class PatchExtractor(object):
             xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers) if
                      int(image_open[y_c, x_c]) is not utils.PIXEL_BLACK and
                      int(tumor_gt_mask[y_c, x_c]) is not utils.PIXEL_WHITE]
-            print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
             if len(xv_yv) > utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX:
                 xv_yv = sample(xv_yv, utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX)
+            print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
 
             for x, y in xv_yv:
                 patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))

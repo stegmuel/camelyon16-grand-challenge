@@ -166,7 +166,7 @@ def extract_patches_from_heatmap_false_region_normal(wsi_ops, patch_extractor, p
     return patch_index
 
 
-def extract_negative_patches_from_normal_wsi(wsi_ops, patch_extractor, patch_index, augmentation=False):
+def extract_negative_patches_from_normal_wsi(wsi_paths, wsi_ops, patch_extractor, patch_index, augmentation=False):
     """
     Extracted up to Normal_060.
 
@@ -176,10 +176,10 @@ def extract_negative_patches_from_normal_wsi(wsi_ops, patch_extractor, patch_ind
     :param augmentation:
     :return:
     """
-    wsi_paths = glob.glob(os.path.join(utils.NORMAL_WSI_PATH, '*.tif'))
-    wsi_paths.sort()
+    # wsi_paths = glob.glob(os.path.join(utils.NORMAL_WSI_PATH, '*.tif'))
+    # wsi_paths.sort()
 
-    wsi_paths = wsi_paths[61:]
+    # wsi_paths = wsi_paths[61:]
 
     patch_save_dir = utils.PATCHES_VALIDATION_AUG_NEGATIVE_PATH if augmentation \
         else utils.PATCHES_VALIDATION_NEGATIVE_PATH
