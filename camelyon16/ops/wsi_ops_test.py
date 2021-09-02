@@ -1,7 +1,7 @@
-import cv2
-import numpy as np
 from openslide import OpenSlide, OpenSlideUnsupportedFormatError
 from PIL import Image
+import numpy as np
+import cv2
 
 import camelyon16.utils as utils
 

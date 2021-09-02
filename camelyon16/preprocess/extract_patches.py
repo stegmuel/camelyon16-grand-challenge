@@ -18,8 +18,8 @@ def extract_positive_patches_from_tumor_wsi(wsi_paths, mask_paths, wsi_ops, patc
     image_mask_pair = list(image_mask_pair)
     # image_mask_pair = image_mask_pair[67:68]
 
-    patch_save_dir = utils.PATCHES_TRAIN_AUG_POSITIVE_PATH if augmentation else utils.PATCHES_TRAIN_POSITIVE_PATH
-    patch_prefix = utils.PATCH_AUG_TUMOR_PREFIX if augmentation else utils.PATCH_TUMOR_PREFIX
+    patch_save_dir = utils.PATCHES_TUMOR_POSITIVE_PATH
+    patch_prefix = utils.PATCH_TUMOR_PREFIX
 
     for image_path, mask_path in image_mask_pair:
         print('extract_positive_patches_from_tumor_wsi(): %s' % utils.get_filename_from_path(image_path))
@@ -41,8 +41,8 @@ def extract_negative_patches_from_tumor_wsi(wsi_paths, mask_paths, wsi_ops, patc
     image_mask_pair = list(image_mask_pair)
     # image_mask_pair = image_mask_pair[67:68]
 
-    patch_save_dir = utils.PATCHES_TRAIN_AUG_NEGATIVE_PATH if augmentation else utils.PATCHES_TRAIN_NEGATIVE_PATH
-    patch_prefix = utils.PATCH_AUG_NORMAL_PREFIX if augmentation else utils.PATCH_NORMAL_PREFIX
+    patch_save_dir = utils.PATCHES_TUMOR_NEGATIVE_PATH
+    patch_prefix = utils.PATCH_NORMAL_PREFIX
     for image_path, mask_path in image_mask_pair:
         print('extract_negative_patches_from_tumor_wsi(): %s' % utils.get_filename_from_path(image_path))
         wsi_image, rgb_image, _, tumor_gt_mask, level_used = wsi_ops.read_wsi_tumor(image_path, mask_path)
@@ -181,8 +181,8 @@ def extract_negative_patches_from_normal_wsi(wsi_paths, wsi_ops, patch_extractor
 
     # wsi_paths = wsi_paths[61:]
 
-    patch_save_dir = utils.PATCHES_TRAIN_AUG_NEGATIVE_PATH if augmentation else utils.PATCHES_TRAIN_NEGATIVE_PATH
-    patch_prefix = utils.PATCH_AUG_NORMAL_PREFIX if augmentation else utils.PATCH_NORMAL_PREFIX
+    patch_save_dir = utils.PATCHES_NORMAL_NEGATIVE_PATH
+    patch_prefix = utils.PATCH_NORMAL_PREFIX
     for image_path in wsi_paths:
         print('extract_negative_patches_from_normal_wsi(): %s' % utils.get_filename_from_path(image_path))
         wsi_image, rgb_image, level_used = wsi_ops.read_wsi_normal(image_path)

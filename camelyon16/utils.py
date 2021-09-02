@@ -27,10 +27,12 @@ TUMOR_MASK_PATH = TUMOR_MASK_PATH_DICT[user]
 #
 # PATCHES_TRAIN_DIR = DATA_DIR + 'Processed/patch-based-classification/raw-data/train/'
 # PATCHES_VALIDATION_DIR = DATA_DIR + 'Processed/patch-based-classification/raw-data/validation/'
-PATCHES_TRAIN_NEGATIVE_PATH_DICT = {'thomas': '/media/thomas/Samsung_T5/CAMELYON-16/patches/scaling_14/negatives/'}
-PATCHES_TRAIN_NEGATIVE_PATH = PATCHES_TRAIN_NEGATIVE_PATH_DICT[user]
-PATCHES_TRAIN_POSITIVE_PATH_DICT = {'thomas': '/media/thomas/Samsung_T5/CAMELYON-16/patches/scaling_14/positives/'}
-PATCHES_TRAIN_POSITIVE_PATH = PATCHES_TRAIN_POSITIVE_PATH_DICT[user]
+PATCHES_TUMOR_NEGATIVE_PATH_DICT = {'thomas': '/media/thomas/Samsung_T5/CAMELYON-16/patches/scaling_14/tumor_negatives/'}
+PATCHES_TUMOR_NEGATIVE_PATH = PATCHES_TUMOR_NEGATIVE_PATH_DICT[user]
+PATCHES_NORMAL_NEGATIVE_PATH_DICT = {'thomas': '/media/thomas/Samsung_T5/CAMELYON-16/patches/scaling_14/normal_negatives/'}
+PATCHES_NORMAL_NEGATIVE_PATH = PATCHES_TUMOR_NEGATIVE_PATH_DICT[user]
+PATCHES_TUMOR_POSITIVE_PATH_DICT = {'thomas': '/media/thomas/Samsung_T5/CAMELYON-16/patches/scaling_14/tumor_positives/'}
+PATCHES_TUMOR_POSITIVE_PATH = PATCHES_TUMOR_POSITIVE_PATH_DICT[user]
 # PATCHES_VALIDATION_NEGATIVE_PATH = PATCHES_VALIDATION_DIR + 'label-0/'
 # PATCHES_VALIDATION_POSITIVE_PATH = PATCHES_VALIDATION_DIR + 'label-1/'
 #
