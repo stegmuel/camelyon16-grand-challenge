@@ -51,14 +51,13 @@ class PatchExtractor(object):
                 xv, yv = np.meshgrid(xs, ys)
                 xv_yv = np.stack([xv, yv])
                 xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
+                patch_dim = int(utils.PATCH_SIZE / mag_factor)
 
                 # Filer the non-tumor patches
-                if width * height > utils.PATCH_SIZE ** 2:
-                    centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
-                               for x, y in xv_yv]
-                    xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers)
-                             if int(tumor_gt_mask[y_c, x_c]) is utils.PIXEL_WHITE]
-                print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
+                corners = [(int(x / mag_factor), int(y/ mag_factor)) for x, y in xv_yv]
+                xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, corners)
+                         if np.mean(tumor_gt_mask[y_c: y_c + patch_dim, x_c: x_c + patch_dim]) > utils.PIXEL_BLACK]
+                print('Kept {} patches out of {}.'.format(len(xv_yv), len(corners)))
 
                 for x, y in xv_yv:
                     patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
