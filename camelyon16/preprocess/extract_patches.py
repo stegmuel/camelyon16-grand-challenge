@@ -23,7 +23,7 @@ def extract_positive_patches_from_tumor_wsi(wsi_paths, mask_paths, wsi_ops, patc
 
     for image_path, mask_path in image_mask_pair:
         print('extract_positive_patches_from_tumor_wsi(): %s' % utils.get_filename_from_path(image_path))
-        wsi_image, rgb_image, _, tumor_gt_mask, level_used = wsi_ops.read_wsi_tumor(image_path, mask_path)
+        wsi_image, rgb_image, wsi_mask, tumor_gt_mask, level_used = wsi_ops.read_wsi_tumor(image_path, mask_path)
         assert wsi_image is not None, 'Failed to read Whole Slide Image %s.' % image_path
 
         bounding_boxes = wsi_ops.find_roi_bbox_tumor_gt_mask(np.array(tumor_gt_mask))
@@ -31,7 +31,7 @@ def extract_positive_patches_from_tumor_wsi(wsi_paths, mask_paths, wsi_ops, patc
         patch_index = patch_extractor.extract_positive_patches_from_tumor_region(wsi_image, np.array(tumor_gt_mask),
                                                                                  level_used, bounding_boxes,
                                                                                  patch_save_dir, patch_prefix,
-                                                                                 patch_index)
+                                                                                 patch_index, wsi_mask)
         # print('Positive patch count: %d' % (patch_index - utils.PATCH_INDEX_POSITIVE))
         wsi_image.close()
 

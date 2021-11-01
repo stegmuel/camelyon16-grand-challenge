@@ -1,5 +1,6 @@
 import sys
 from random import sample
+from PIL import Image
 
 from openslide import OpenSlide, OpenSlideUnsupportedFormatError
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ class PatchExtractor(object):
     @staticmethod
     def extract_positive_patches_from_tumor_region(wsi_image, tumor_gt_mask, level_used,
                                                    bounding_boxes, patch_save_dir, patch_prefix,
-                                                   patch_index):
+                                                   patch_index, wsi_mask):
         """
 
             Extract positive patches targeting annotated tumor region
@@ -60,6 +61,7 @@ class PatchExtractor(object):
                 print('Kept {} patches out of {}.'.format(len(xv_yv), len(corners)))
 
                 for x, y in xv_yv:
+                    # Read the image
                     patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
                     patch = patch.convert('RGB')
 
@@ -68,6 +70,16 @@ class PatchExtractor(object):
                     patch.save(patch_save_dir + patch_name, 'JPEG')
                     patch_index += 1
                     patch.close()
+
+                    # Read the corresponding mask
+                    patch_mask = wsi_mask.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
+                    patch_mask = patch_mask.convert('RGB')
+                    patch_mask = Image.fromarray(255 * np.array(patch_mask))
+
+                    # Save the patch
+                    patch_mask_name = '_'.join([slide_filename, str(x), str(y)]) + '_mask.jpg'
+                    patch_mask.save(patch_save_dir + patch_mask_name, 'JPEG')
+                    patch_mask.close()
             except IndexError:
                 continue
         return patch_index
@@ -403,7 +415,8 @@ class WSIOps(object):
             # print('resize_factor: %f' % resize_factor)
             tumor_gt_mask = cv2.resize(np.array(tumor_gt_mask), (0, 0), fx=resize_factor, fy=resize_factor)
 
-            wsi_mask.close()
+
+            # wsi_mask.close()
         except OpenSlideUnsupportedFormatError:
             print('Exception: OpenSlideUnsupportedFormatError')
             return None, None, None, None
