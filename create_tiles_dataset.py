@@ -32,8 +32,6 @@ if __name__ == '__main__':
         image_queries = ['/media/thomas/Samsung_T5/CAMELYON-16/training/normal/*.tif']
         image_paths = [filepath for query in image_queries for filepath in glob(query)]
 
-
-
     # Extract tumor patches
     if use_tumor_slides:
         extract_positive_patches_from_tumor_wsi(image_paths, mask_paths, wsi_ops, patch_extractor, 0)

@@ -195,9 +195,7 @@ def extract_negative_patches_from_normal_wsi(wsi_paths, wsi_ops, patch_extractor
                                                                                bounding_boxes,
                                                                                patch_save_dir, patch_prefix,
                                                                                patch_index)
-
         wsi_image.close()
-
     return patch_index
 
 
