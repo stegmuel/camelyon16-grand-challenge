@@ -184,30 +184,31 @@ class PatchExtractor(object):
                 width = int(bounding_box[2]) * mag_factor
                 height = int(bounding_box[3]) * mag_factor
                 print('Dimension of the bounding box: {} x {}'.format(height, width))
-                xs = np.arange(start=int(b_x_start * mag_factor), stop=int(b_x_end * mag_factor), step=utils.PATCH_SIZE)
-                ys = np.arange(start=int(b_y_start * mag_factor), stop=int(b_y_end * mag_factor), step=utils.PATCH_SIZE)
+                xs = np.arange(start=int(b_x_start * mag_factor), stop=int(b_x_end * mag_factor), step=utils.PATCH_SIZE_W)
+                ys = np.arange(start=int(b_y_start * mag_factor), stop=int(b_y_end * mag_factor), step=utils.PATCH_SIZE_W)
                 xv, yv = np.meshgrid(xs, ys)
                 xv_yv = np.stack([xv, yv])
                 xv_yv = list(map(lambda x: tuple(x), list(rearrange(xv_yv, 'd h w -> (h w) d'))))
 
                 # Filer the non-tumor patches
-                centers = [(int((x + utils.PATCH_SIZE / 2) / mag_factor), int((y + utils.PATCH_SIZE / 2) / mag_factor))
+                centers = [(int((x + utils.PATCH_SIZE_W / 2) / mag_factor), int((y + utils.PATCH_SIZE_H / 2) / mag_factor))
                            for x, y in xv_yv]
                 corners = [(int(x / mag_factor), int(y / mag_factor)) for x, y in xv_yv]
-                patch_dim = int(utils.PATCH_SIZE / mag_factor)
+                patch_dim_h = int(utils.PATCH_SIZE_H / mag_factor)
+                patch_dim_w = int(utils.PATCH_SIZE_W / mag_factor)
 
                 # Filter background patches
                 xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, centers) if
                          int(image_open[y_c, x_c]) is not utils.PIXEL_BLACK]
 
                 xv_yv = [(x, y) for (x, y), (x_c, y_c) in zip(xv_yv, corners) if
-                         np.mean(tumor_gt_mask[y_c: y_c + patch_dim, x_c: x_c + patch_dim]) == float(utils.PIXEL_BLACK)]
+                         np.mean(tumor_gt_mask[y_c: y_c + patch_dim_h, x_c: x_c + patch_dim_w]) == float(utils.PIXEL_BLACK)]
                 if len(xv_yv) > utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX:
                     xv_yv = sample(xv_yv, utils.NUM_NEGATIVE_PATCHES_FROM_EACH_BBOX)
                 print('Kept {} patches out of {}.'.format(len(xv_yv), len(centers)))
 
                 for x, y in xv_yv:
-                    patch = wsi_image.read_region((x, y), 0, (utils.PATCH_SIZE, utils.PATCH_SIZE))
+                    patch = wsi_image.read_region((x, y), utils.LEVEL, (utils.PATCH_SIZE_W, utils.PATCH_SIZE_H))
                     patch = patch.convert('RGB')
 
                     # Save the patch
